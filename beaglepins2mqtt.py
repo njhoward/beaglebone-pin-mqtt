@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 import logging
 import logging.config
 import os
+import json
 
 # Initialize ADC
 ADC.setup()
@@ -84,7 +85,7 @@ try:
                 pin_data[spi] = "Inactive"
 
         # Publish data to MQTT
-        client.publish(MQTT_TOPIC, str(pin_data))
+        client.publish(MQTT_TOPIC, json.dumps(pin_data))
         logging.info(pin_data)
 
         time.sleep(30)  # Adjust for desired frequency
