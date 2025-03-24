@@ -2,6 +2,9 @@ import Adafruit_BBIO.GPIO as GPIO
 import Adafruit_BBIO.ADC as ADC
 import time
 import paho.mqtt.client as mqtt
+import logging
+import logging.config
+import os
 
 # Initialize ADC
 ADC.setup()
@@ -10,6 +13,16 @@ ADC.setup()
 MQTT_BROKER = "raspberrypi"
 MQTT_PORT = 1883
 MQTT_TOPIC = "beaglebone/pins"
+
+# Logging Setup
+# Load logging config from external file
+config_file = os.path.join(os.path.dirname(__file__), "logging.conf")
+if os.path.exists(config_file):
+    logging.config.fileConfig(config_file)
+else:
+    logging.basicConfig(filename='/home/debian/logs/beaglepins2mqtt.log', level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+logging.info("Starting Beaglebone PIN MQTT Bridge")
 
 client = mqtt.Client()
 client.connect(MQTT_BROKER, MQTT_PORT, 60)
@@ -39,8 +52,9 @@ for pin in gpio_pins:
     try:
         GPIO.setup(pin, GPIO.IN)
     except Exception as e:
-        print(f"⚠️ Failed to configure {pin}: {e}")
-print("🔍 Monitoring all GPIO, ADC, and SPI pins... Press Ctrl+C to stop.")
+        logging.exception(f"Failed to configure {pin}: {e}")
+
+logging.info("Monitoring all GPIO, ADC, and SPI pins")
 
 try:
     while True:
@@ -71,10 +85,10 @@ try:
 
         # Publish data to MQTT
         client.publish(MQTT_TOPIC, str(pin_data))
-        print(pin_data)
+        logging.info(pin_data)
 
         time.sleep(30)  # Adjust for desired frequency
 
 except KeyboardInterrupt:
-    print("\n Monitoring stopped. Exiting...")
+    logging.info("\n Monitoring stopped. Exiting...")
     GPIO.cleanup()
